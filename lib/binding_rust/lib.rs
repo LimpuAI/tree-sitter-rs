@@ -36,6 +36,8 @@ use tree_sitter_language::LanguageFn;
 #[cfg(feature = "wasm")]
 mod wasm_language;
 #[cfg(feature = "wasm")]
+mod wasm_store;
+#[cfg(feature = "wasm")]
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
 pub use wasm_language::*;
 

@@ -39,18 +39,17 @@ workspace = true
 [features]
 default = [ "std" ]
 std = [ "regex/std", "regex/perf" ]
-wasm = [ "std", "wasmtime-c-api" ]
+wasm = [ "std", "dep:wasmtime" ]
 
 [dependencies]
 regex = { default-features = false, features = [ "unicode" ], version = "1.12.3" }
 streaming-iterator = "0.1.9"
 tree-sitter-language.workspace = true
 
-[dependencies.wasmtime-c-api]
+[dependencies.wasmtime]
 default-features = false
-features = [ "cranelift", "gc", "gc-null" ]
+features = [ "cranelift", "runtime" ]
 optional = true
-package = "wasmtime-c-api-impl"
 version = "48.0.1"
 
 [build-dependencies]
