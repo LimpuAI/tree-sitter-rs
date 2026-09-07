@@ -6,23 +6,9 @@ use std::{
     os::raw::c_char,
 };
 
-pub use wasmtime_c_api::wasmtime;
+pub use wasmtime;
 
 use crate::{Language, LanguageError, Parser, ffi, ts_free};
-
-// Force Cargo to include wasmtime-c-api as a dependency of this crate,
-// even though it is only used by the C code.
-#[expect(unused, reason = "forces Cargo to link wasmtime-c-api")]
-fn use_wasmtime() {
-    wasmtime_c_api::wasm_engine_new();
-}
-
-#[repr(C)]
-#[derive(Clone)]
-#[allow(non_camel_case_types)]
-pub struct wasm_engine_t {
-    pub(crate) engine: wasmtime::Engine,
-}
 
 pub struct WasmStore(*mut ffi::TSWasmStore);
 

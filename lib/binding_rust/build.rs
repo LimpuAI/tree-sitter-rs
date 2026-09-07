@@ -17,10 +17,13 @@ fn main() {
 
     println!("cargo:rerun-if-env-changed=CARGO_FEATURE_WASM");
     if env::var("CARGO_FEATURE_WASM").is_ok() {
+        // The Wasm store itself is implemented in Rust (binding_rust/wasm_store);
+        // this define only gates `lib.c`'s inclusion of `wasm_store.c` and the
+        // C stub branch when the feature is off.
         config
             .define("TREE_SITTER_FEATURE_WASM", "")
-            .define("static_assert(...)", "")
-            .include(env::var("DEP_WASMTIME_C_API_INCLUDE").unwrap());
+            .define("static_assert(...)", "");
+        emit_stdlib_wasm(&out_dir);
     }
 
     let manifest_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
@@ -67,6 +70,31 @@ fn configure_wasm_build(config: &mut cc::Build) {
     config
         .define("TREE_SITTER_WASM_STDLIB", "")
         .include(&wasm_headers);
+}
+
+// Extracts the `STDLIB_WASM[]` byte array from the generated C header into a
+// Rust source file so the Rust wasm store can instantiate the stdlib module.
+fn emit_stdlib_wasm(out_dir: &std::path::Path) {
+    println!("cargo:rerun-if-changed=src/wasm-stdlib/external_scanner_stdlib.h");
+    let header = fs::read_to_string("src/wasm-stdlib/external_scanner_stdlib.h").unwrap();
+    let array_start = header.find("STDLIB_WASM[]").unwrap();
+    let open = header[array_start..].find('{').unwrap() + array_start;
+    let close = header[open..].find('}').unwrap() + open;
+    let bytes: Vec<String> = header[open + 1..close]
+        .split(',')
+        .map(str::trim)
+        .filter(|token| !token.is_empty())
+        .map(|token| {
+            let value = u8::from_str_radix(token.trim_start_matches("0x"), 16).unwrap();
+            format!("{value:#04x}")
+        })
+        .collect();
+    let source = format!(
+        "pub(crate) static STDLIB_WASM: [u8; {}] = [{}];\n",
+        bytes.len(),
+        bytes.join(", ")
+    );
+    fs::write(out_dir.join("stdlib_wasm.rs"), source).unwrap();
 }
 
 #[cfg(feature = "bindgen")]
